@@ -1,0 +1,15 @@
+{
+  "name": "nola-god-level",
+  "version": "1.0.0",
+  "description": "nola-god challenge",
+  "workspaces": [
+    "apps/frontend"
+  ],
+  "scripts": {
+    "dev": "npm --workspace=apps/frontend run dev",
+    "build": "npm -w apps/frontend run build",
+    "start": "npm -w apps/frontend start"
+  },
+  "author": "vitor0ferreira",
+  "license": "ISC"
+}
