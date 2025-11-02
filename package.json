@@ -11,5 +11,14 @@
     "start": "npm -w apps/frontend start"
   },
   "author": "vitor0ferreira",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "tsx": "^4.20.6"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.18.0",
+    "@prisma/extension-accelerate": "^2.0.2",
+    "dotenv": "^17.2.3",
+    "swr": "^2.3.6"
+  }
 }

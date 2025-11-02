@@ -203,7 +203,6 @@ export function ReportView({ reportId, data, title, description }: ReportViewPro
     )
   }
 
-  // Default fallback
   return (
     <Card>
       <CardHeader>

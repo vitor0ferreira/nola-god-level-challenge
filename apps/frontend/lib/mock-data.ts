@@ -1,6 +1,5 @@
 import type { Sale, Store, Channel, Product, Category, Brand, SubBrand } from "@/lib/database"
 
-// Mock brands
 export const mockBrands: Brand[] = [{ id: 1, name: "Restaurante Maria", created_at: new Date("2020-01-01") }]
 
 export const mockSubBrands: SubBrand[] = [
@@ -8,7 +7,6 @@ export const mockSubBrands: SubBrand[] = [
   { id: 2, brand_id: 1, name: "Maria Premium", created_at: new Date("2021-06-01") },
 ]
 
-// Mock stores
 export const mockStores: Store[] = [
   {
     id: 1,

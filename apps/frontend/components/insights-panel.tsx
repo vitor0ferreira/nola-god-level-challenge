@@ -41,7 +41,7 @@ export function InsightsPanel({ insights }: InsightsPanelProps) {
                 insight.type === "neutral" && "bg-blue-500/5 border-blue-500/20",
               )}
             >
-              <div className="flex-shrink-0 mt-0.5">{getIcon(insight.type)}</div>
+              <div className="shrink-0 mt-0.5">{getIcon(insight.type)}</div>
               <div className="flex-1 space-y-1">
                 <p className="text-sm font-medium">{insight.title}</p>
                 <p className="text-xs text-muted-foreground">{insight.description}</p>
