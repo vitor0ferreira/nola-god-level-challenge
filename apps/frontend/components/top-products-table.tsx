@@ -16,7 +16,7 @@ export function TopProductsTable({ products, title }: TopProductsTableProps) {
       <CardContent>
         <div className="space-y-3">
           {products.map((product, index) => (
-            <div key={product.product_id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+            <div key={product.product_name} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
                   {index + 1}

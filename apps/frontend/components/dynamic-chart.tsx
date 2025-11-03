@@ -30,15 +30,7 @@ interface DynamicChartProps {
 
 const COLORS = ["#3b82f6", "#f97316", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899", "#06b6d4", "#84cc16"]
 
-const metricLabels: Record<MetricType, string> = {
-  revenue: "Faturamento",
-  orders: "Pedidos",
-  ticket: "Ticket Médio",
-  discount: "Desconto Médio",
-  production_time: "Tempo de Preparo (min)",
-  delivery_time: "Tempo de Entrega (min)",
-  quantity: "Quantidade",
-}
+import { metricLabels } from "@/lib/constants"
 
 export function DynamicChart({ metric, dimension, chartType, data, title, description }: DynamicChartProps) {
   const formatValue = (value: number) => {
@@ -154,15 +146,14 @@ export function DynamicChart({ metric, dimension, chartType, data, title, descri
     )
   }
 
-  // Default: bar chart
   return (
     <Card>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
-      <CardContent>
-        <ChartContainer config={chartConfig} className="h-[400px]">
+        <CardContent>
+          <ChartContainer config={chartConfig} className="h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />

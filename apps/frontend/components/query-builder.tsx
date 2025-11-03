@@ -26,30 +26,25 @@ interface QueryBuilderProps {
   onQueryChange: (metric: MetricType, dimension: DimensionType, chartType: ChartType) => void
 }
 
-const metrics = [
-  { value: "revenue", label: "Faturamento Total", description: "Soma do valor total das vendas" },
-  { value: "orders", label: "Quantidade de Pedidos", description: "Número total de pedidos" },
-  { value: "ticket", label: "Ticket Médio", description: "Valor médio por pedido" },
-  { value: "discount", label: "Desconto Médio", description: "Valor médio de desconto aplicado" },
-  { value: "quantity", label: "Quantidade Vendida", description: "Total de produtos vendidos" },
-  {
-    value: "production_time",
-    label: "Tempo de Preparo",
-    description: "Tempo médio de produção em minutos",
-  },
-  { value: "delivery_time", label: "Tempo de Entrega", description: "Tempo médio de entrega em minutos" },
-]
+import {
+  metricLabels,
+  metricDescriptions,
+  dimensionLabels,
+  dimensionDescriptions,
+  chartTypes as defaultChartTypes
+} from "@/lib/constants"
 
-const dimensions = [
-  { value: "day", label: "Por Dia", description: "Agrupa os dados por dia" },
-  { value: "month", label: "Por Mês", description: "Agrupa os dados por mês" },
-  { value: "store", label: "Por Loja", description: "Compara entre lojas" },
-  { value: "channel", label: "Por Canal", description: "Compara entre canais de venda" },
-  { value: "product", label: "Por Produto", description: "Ranking de produtos" },
-  { value: "category", label: "Por Categoria", description: "Agrupa por categoria de produto" },
-  { value: "hour", label: "Por Hora do Dia", description: "Identifica horários de pico" },
-  { value: "weekday", label: "Por Dia da Semana", description: "Compara dias da semana" },
-]
+const metrics = Object.entries(metricLabels).map(([value, label]) => ({
+  value,
+  label,
+  description: metricDescriptions[value]
+}))
+
+const dimensions = Object.entries(dimensionLabels).map(([value, label]) => ({
+  value,
+  label,
+  description: dimensionDescriptions[value]
+}))
 
 const chartTypes = [
   { value: "bar", label: "Barras", icon: BarChart3 },

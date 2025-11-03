@@ -83,11 +83,10 @@ export interface ProductSale {
   total_price: number
 }
 
-// Aggregated metrics for dashboard
 export interface MetricData {
   label: string
   value: number
-  change?: number // percentage change vs previous period
+  change?: number // percentual contra periodo anterior
   trend?: "up" | "down" | "neutral"
 }
 

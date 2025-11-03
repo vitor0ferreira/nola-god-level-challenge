@@ -18,14 +18,23 @@ export function RevenueChart({ data, title }: RevenueChartProps) {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={data}>
+          <AreaChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <defs>
               <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="rgb(59, 130, 246)" stopOpacity={0.3} />
                 <stop offset="95%" stopColor="rgb(59, 130, 246)" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <XAxis dataKey="date" stroke="rgb(163, 163, 163)" fontSize={12} tickLine={false} axisLine={false} />
+            <XAxis
+              dataKey="date"
+              stroke="rgb(163, 163, 163)"
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
+              angle={-45}
+              textAnchor="end"
+              height={60}
+            />
             <YAxis
               stroke="rgb(163, 163, 163)"
               fontSize={12}

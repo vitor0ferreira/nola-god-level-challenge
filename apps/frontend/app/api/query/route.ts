@@ -2,22 +2,14 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { BaseQuerySchema, serializePrismaData } from '@/lib/api-helpers'
 import { z } from 'zod'
-import { 
-  buildDynamicQuery, 
-  MetricType, 
-  DimensionType 
-} from '@/lib/query-builder-helpers'
+import { buildDynamicQuery } from '@/lib/query-builder-helpers'
+import type { MetricType, DimensionType } from '@/components/query-builder'
+import { metricLabels, dimensionLabels } from '@/lib/constants'
 
 
 const QueryBuilderSchema = BaseQuerySchema.extend({
-  metric: z.enum([
-    "revenue", "orders", "ticket", "discount", 
-    "production_time", "delivery_time", "quantity"
-  ]),
-  dimension: z.enum([
-    "day", "month", "store", "channel", "product", 
-    "category", "hour", "weekday", "payment_type"
-  ]),
+  metric: z.enum(Object.keys(metricLabels) as [keyof typeof metricLabels, ...Array<keyof typeof metricLabels>]),
+  dimension: z.enum(Object.keys(dimensionLabels) as [keyof typeof dimensionLabels, ...Array<keyof typeof dimensionLabels>]),
 });
 
 function parseNumberArray(str: string | null | undefined): number[] | null {
@@ -35,8 +27,8 @@ export async function GET(request: Request) {
       endDate: searchParams.get('endDate'),
       storeIds: searchParams.get('storeIds'),
       channelIds: searchParams.get('channelIds'),
-      metric: searchParams.get('metric'),
-      dimension: searchParams.get('dimension'),
+      metric: searchParams.get('metric') as MetricType,
+      dimension: searchParams.get('dimension') as DimensionType,
     }
 
     const validation = QueryBuilderSchema.safeParse(params)
@@ -57,8 +49,8 @@ export async function GET(request: Request) {
     const channelIdArray = parseNumberArray(channelIds)
 
     const { sql, params: queryParams, formatLabel } = buildDynamicQuery(
-      metric,
-      dimension,
+      metric as MetricType,
+      dimension as DimensionType,
       startDate,
       endDate,
       storeIdArray,

@@ -1,4 +1,3 @@
-// apps/frontend/app/page.tsx
 "use client"
 
 import { useState, useMemo } from "react"
@@ -23,8 +22,22 @@ import {
 import { fetcher } from '@/lib/fetcher'
 import { generateInsights } from "@/lib/insights"
 import { ChartDataPoint } from "@/lib/database"
-import { metricLabels, dimensionLabels } from "@/lib/query-builder-helpers"
+import { metricLabels, dimensionLabels } from "@/lib/constants"
 
+type FiltersResponse = {
+  stores:{
+    id: number,
+    name: string
+  }[],
+  channels: {
+    id: number,
+    name: string
+  }[],
+  products: {
+    id: number,
+    name: string
+  }[]
+}
 
 type KpisResponse = {
   total_revenue: number
@@ -51,7 +64,7 @@ export default function DashboardPage() {
   const [analysisFocus, setAnalysisFocus] = useState<AnalysisFocus>("geral")
 
   const [period, setPeriod] = useState("month")
-  const [selectedStore, setSelectedStore] = useState<number | null>(null)
+  const [selectedStores, setSelectedStores] = useState<number[]>([])
   const [selectedChannel, setSelectedChannel] = useState<number | null>(null)
   const [selectedProduct, setSelectedProduct] = useState<number | null>(null)
 
@@ -64,16 +77,33 @@ export default function DashboardPage() {
 
   const [isQueryBuilderVisible, setIsQueryBuilderVisible] = useState(false)
 
-  const { startDate, endDate } = getPeriodDates(period)
-  const { startDate: prevStartDate, endDate: prevEndDate } = getPreviousPeriodDates(startDate, endDate)
+  const { startDate: rawStartDate, endDate: rawEndDate } = getPeriodDates(period)
+
+  const { data: metaLastDate } = useSWR<{ lastDate: string | null }>(`/api/meta/last-date`, fetcher)
+
+  const { startDate, endDate } = useMemo(() => {
+    if (!metaLastDate || !metaLastDate.lastDate) return { startDate: rawStartDate, endDate: rawEndDate }
+    const last = new Date(metaLastDate.lastDate)
+
+    if (rawEndDate.getTime() <= last.getTime()) return { startDate: rawStartDate, endDate: rawEndDate }
+
+    const delta = rawEndDate.getTime() - rawStartDate.getTime()
+    const newEnd = new Date(last)
+    newEnd.setHours(23, 59, 59, 999)
+    const newStart = new Date(newEnd.getTime() - delta)
+    newStart.setHours(0, 0, 0, 0)
+    return { startDate: newStart, endDate: newEnd }
+  }, [rawStartDate, rawEndDate, metaLastDate])
+
+  const { startDate: prevStartDate, endDate: prevEndDate } = useMemo(() => getPreviousPeriodDates(startDate, endDate), [startDate, endDate])
 
   const buildQueryParams = (start: Date, end: Date) => {
     const params = new URLSearchParams({
       startDate: start.toISOString(),
       endDate: end.toISOString(),
     })
-    if (selectedStore) {
-      params.append('storeIds', selectedStore.toString())
+    if (selectedStores && selectedStores.length) {
+      params.append('storeIds', selectedStores.join(','))
     }
     if (selectedChannel) {
       params.append('channelIds', selectedChannel.toString())
@@ -86,6 +116,8 @@ export default function DashboardPage() {
   
   const { data: currentKpis } = useSWR<KpisResponse>(`/api/kpis?${currentParams}`, fetcher)
   const { data: previousKpis } = useSWR<KpisResponse>(`/api/kpis?${previousParams}`, fetcher)
+
+  const { data: filtersData } = useSWR<FiltersResponse>(`/api/filters?${currentParams}`, fetcher)
 
   const { data: revenueByDay } = useSWR<ChartResponse>(
     `/api/sales-timeseries?${currentParams}&timeBucket=day`, fetcher
@@ -111,6 +143,17 @@ export default function DashboardPage() {
     `/api/ranking/products?${currentParams}&orderBy=revenue_generated`, fetcher
   )
 
+  const mappedTopProducts = useMemo(() => {
+    if (!topProducts) return []
+    return topProducts.map((p: any) => ({
+      product_name: p.product_name || p.name || '—',
+      product_id: p.product_id ?? p.id ?? 0,
+      total_quantity: Number(p.units_sold ?? p.total_quantity ?? 0),
+      total_revenue: Number(p.revenue_generated ?? p.total_revenue ?? 0),
+      order_count: Number(p.units_sold ?? p.order_count ?? 0),
+    })) as TopProductsResponse
+  }, [topProducts])
+
   const { data: revenueByHour } = useSWR<ChartResponse>(
     analysisFocus === 'temporal' ? `/api/query?${currentParams}&metric=revenue&dimension=hour` : null,
     fetcher
@@ -130,11 +173,11 @@ export default function DashboardPage() {
       metric: customQuery.metric,
       dimension: customQuery.dimension,
     })
-    if (selectedStore) params.append('storeIds', selectedStore.toString())
+    if (selectedStores && selectedStores.length) params.append('storeIds', selectedStores.join(','))
     if (selectedChannel) params.append('channelIds', selectedChannel.toString())
     
     return `/api/query?${params.toString()}`
-  }, [customQuery, startDate, endDate, selectedStore, selectedChannel])
+  }, [customQuery, startDate, endDate, selectedStores, selectedChannel])
 
   const { 
     data: customData, 
@@ -196,20 +239,44 @@ export default function DashboardPage() {
     )
   }, [currentKpis, previousKpis, revenueByChannel, prevRevenueByChannel, revenueByStore, prevRevenueByStore])
 
-  const formatDataForChart = (data: ChartResponse | undefined): ChartDataPoint[] => {
+  const formatDataForChart = (data: ChartResponse | undefined, isTimeSeries: boolean = false): ChartDataPoint[] => {
     if (!data) return []
-    return data.map(item => ({
-      date: item.name,
-      value: item.value,
-      label: item.label || item.name,
-    }))
+
+    const normalized = data.map((item: any) => {
+      const rawName = item.name ?? item.time_bucket ?? item.channel_name ?? item.product_name ?? item.label ?? item[0]
+      const rawValue = item.value ?? item.total_revenue ?? item.revenue_generated ?? item.total_sales ?? item.units_sold ?? item.count ?? 0
+
+      const parsedTime = Date.parse(String(rawName))
+      const hasValidDate = !Number.isNaN(parsedTime)
+
+      const date = String(rawName)
+      const displayDate = hasValidDate ? new Date(parsedTime).toLocaleDateString('pt-BR') : String(rawName)
+
+      return {
+        date,
+        value: Number(rawValue) || 0,
+        label: item.label || displayDate || String(rawName),
+        _ts: hasValidDate ? parsedTime : undefined,
+      } as ChartDataPoint & { _ts?: number }
+    })
+
+    normalized.sort((a: any, b: any) => {
+      if (isTimeSeries) {
+        const ta = a._ts ?? Date.parse(a.date)
+        const tb = b._ts ?? Date.parse(b.date)
+        return (ta || 0) - (tb || 0)
+      }
+      return b.value - a.value
+    })
+
+    return normalized.map(({ _ts, ...rest }: any) => rest as ChartDataPoint)
   }
 
   const charts = {
-    revenueByDay: formatDataForChart(revenueByDay),
+    revenueByDay: formatDataForChart(revenueByDay, true),
     revenueByChannel: formatDataForChart(revenueByChannel),
     revenueByStore: formatDataForChart(revenueByStore),
-    topProducts: topProducts || [],
+    topProducts: mappedTopProducts || [],
     revenueByHour: formatDataForChart(revenueByHour),
     revenueByWeekday: formatDataForChart(revenueByWeekday),
   }
@@ -220,7 +287,7 @@ export default function DashboardPage() {
       if (!data) return []
       return data.slice(0, 10).map(p => ({
         date: p.product_name,
-        value: p.total_revenue,
+        value: Number(p.total_revenue) || 0,
         label: p.product_name,
       }))
     }
@@ -248,8 +315,10 @@ export default function DashboardPage() {
       case "lojas":
         return {
           title: "Análise por Lojas",
-          description: selectedStore
+          description: selectedStores && selectedStores.length === 1
             ? `Dados específicos da loja selecionada`
+            : selectedStores && selectedStores.length > 1
+            ? `Dados das lojas selecionadas`
             : "Compare a performance entre diferentes lojas",
           charts: [
             { component: <ComparisonChart key="stores" data={charts.revenueByStore} title="Comparação de Lojas" /> },
@@ -282,7 +351,7 @@ export default function DashboardPage() {
               component: (
                 <ComparisonChart
                   key="products-revenue"
-                  data={formatTopProductsForChart(topProducts)}
+                  data={formatTopProductsForChart(mappedTopProducts)}
                   title="Faturamento por Produto (Top 10)"
                 />
               ),
@@ -347,7 +416,7 @@ export default function DashboardPage() {
       default:
         return { title: "Visão Geral", description: "Panorama do negócio", charts: [] }
     }
-  }, [analysisFocus, selectedStore, charts, topProducts])
+  }, [analysisFocus, selectedStores, charts, topProducts])
 
   const handleQueryChange = (
     metric: MetricType, 
@@ -373,12 +442,13 @@ export default function DashboardPage() {
           focus={analysisFocus}
           period={period}
           onPeriodChange={setPeriod}
-          storeId={selectedStore}
-          onStoreChange={setSelectedStore}
+          storeId={selectedStores}
+          onStoreChange={setSelectedStores}
           channelId={selectedChannel}
           onChannelChange={setSelectedChannel}
           productId={selectedProduct}
           onProductChange={setSelectedProduct}
+          filtersData={filtersData}
         />
 
         <main className="flex-1 overflow-auto">

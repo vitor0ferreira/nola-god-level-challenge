@@ -2,31 +2,37 @@
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { mockStores, mockChannels, mockProducts } from "@/lib/mock-data"
+import { MultiStoreSelect } from './multi-store-select'
 import type { AnalysisFocus } from "./analysis-focus-sidebar"
 
 interface SecondaryFiltersProps {
   focus: AnalysisFocus
   period: string
   onPeriodChange: (period: string) => void
-  storeId: number | null
-  onStoreChange: (storeId: number | null) => void
+  storeId: number[]
+  onStoreChange: (storeId: number[]) => void
   channelId: number | null
   onChannelChange: (channelId: number | null) => void
   productId: number | null
   onProductChange: (productId: number | null) => void
+  filtersData?: {
+    stores?: Array<{id: number, name: string}>
+    channels?: Array<{id: number, name: string}>
+    products?: Array<{id: number, name: string}>
+  }
 }
 
 export function SecondaryFilters({
   focus,
   period,
   onPeriodChange,
-  storeId,
-  onStoreChange,
+  storeId, 
+  onStoreChange, 
   channelId,
   onChannelChange,
   productId,
   onProductChange,
+  filtersData
 }: SecondaryFiltersProps) {
   const periodOptions = [
     { value: "today", label: "Hoje" },
@@ -65,22 +71,11 @@ export function SecondaryFilters({
           <Label htmlFor="store" className="text-xs text-muted-foreground mb-1.5 block">
             Loja
           </Label>
-          <Select
-            value={storeId?.toString() || "all"}
-            onValueChange={(v) => onStoreChange(v === "all" ? null : Number(v))}
-          >
-            <SelectTrigger id="store">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as lojas</SelectItem>
-              {mockStores.map((store) => (
-                <SelectItem key={store.id} value={store.id.toString()}>
-                  {store.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <MultiStoreSelect
+            stores={filtersData?.stores ?? []}
+            value={storeId ?? []}
+            onChange={(ids) => onStoreChange(ids)}
+          />
         </div>
       )}
 
@@ -98,11 +93,11 @@ export function SecondaryFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os canais</SelectItem>
-              {mockChannels.map((channel) => (
+              {filtersData?.channels?.map((channel:{id: number, name: string}) => (
                 <SelectItem key={channel.id} value={channel.id.toString()}>
                   {channel.name}
                 </SelectItem>
-              ))}
+              )) ?? null}
             </SelectContent>
           </Select>
         </div>
@@ -122,11 +117,11 @@ export function SecondaryFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os produtos</SelectItem>
-              {mockProducts.slice(0, 20).map((product) => (
+              {filtersData?.products?.map((product:{id: number, name: string}) => (
                 <SelectItem key={product.id} value={product.id.toString()}>
                   {product.name}
                 </SelectItem>
-              ))}
+              )) ?? null}
             </SelectContent>
           </Select>
         </div>

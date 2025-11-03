@@ -18,8 +18,18 @@ export function ComparisonChart({ data, title }: ComparisonChartProps) {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data}>
-            <XAxis dataKey="label" stroke="rgb(163, 163, 163)" fontSize={12} tickLine={false} axisLine={false} />
+          <BarChart data={data} margin={{ top: 20, right: 20, left: 20, bottom: 5 }}>
+            <XAxis
+              dataKey="label"
+              stroke="rgb(163, 163, 163)"
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
+              angle={-45}
+              textAnchor="end"
+              height={60}
+              interval={0}
+            />
             <YAxis
               stroke="rgb(163, 163, 163)"
               fontSize={12}

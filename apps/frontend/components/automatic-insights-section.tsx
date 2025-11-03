@@ -67,7 +67,7 @@ export function AutomaticInsightsSection({ insights }: AutomaticInsightsSectionP
                 <div className="flex-1 space-y-1">
                   <div className="flex items-center gap-2">
                     <Badge variant={badgeVariant} className="text-xs">
-                      {insight.category}
+                      {insight?.value}
                     </Badge>
                   </div>
                   <p className="text-sm font-medium">{insight.title}</p>
