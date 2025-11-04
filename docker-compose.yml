@@ -13,6 +13,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      # Aplicar views materializadas na primeira inicialização do banco
+      - ./apps/frontend/prisma/migrations/20251103_add_materialized_views.sql:/docker-entrypoint-initdb.d/02-materialized-views.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U challenge -d challenge_db"]
       interval: 5s

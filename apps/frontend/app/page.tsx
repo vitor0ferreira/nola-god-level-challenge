@@ -23,6 +23,7 @@ import { fetcher } from '@/lib/fetcher'
 import { generateInsights } from "@/lib/insights"
 import { ChartDataPoint } from "@/lib/database"
 import { metricLabels, dimensionLabels } from "@/lib/constants"
+import { differenceInDays } from "date-fns"
 
 type FiltersResponse = {
   stores:{

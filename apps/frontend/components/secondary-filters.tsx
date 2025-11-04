@@ -40,6 +40,7 @@ export function SecondaryFilters({
     { value: "week", label: "Últimos 7 dias" },
     { value: "month", label: "Últimos 30 dias" },
     { value: "quarter", label: "Últimos 90 dias" },
+    { value: "semester", label: "Últimos 180 dias" },
   ]
 
   const showStoreFilter = focus === "lojas" || focus === "produtos" || focus === "canais"

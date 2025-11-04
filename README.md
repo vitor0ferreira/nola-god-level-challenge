@@ -42,6 +42,32 @@ Uma plataforma onde um dono de restaurante possa:
 | [FAQ.md](./FAQ.md) | Perguntas frequentes |
 | [QUICKSTART.md](./QUICKSTART.md) | Tutorial rápido para começar o desafio |
 
+### Materialized views
+
+We create materialized views to speed up analytics queries. To ensure everyone who clones the repo gets the views:
+
+- For a fresh database (first time using docker compose): the migration SQL is mounted into Postgres init and will be applied automatically on first initialization.
+
+- For an existing database (already populated by `generate_data.py`), run the helper script to apply the views manually:
+
+PowerShell (Windows):
+```powershell
+.\scripts\apply-materialized-views.ps1
+# or, supplying DATABASE_URL explicitly:
+$env:DATABASE_URL='postgresql://challenge:challenge_2024@localhost:5432/challenge_db'; .\scripts\apply-materialized-views.ps1
+```
+
+Bash / macOS / Linux:
+```bash
+./scripts/apply-materialized-views.sh
+# or, using DATABASE_URL:
+DATABASE_URL='postgresql://challenge:challenge_2024@localhost:5432/challenge_db' ./scripts/apply-materialized-views.sh
+```
+
+Notes:
+- The script will try to use a local `psql` (when DATABASE_URL provided) or `docker exec` into the container named `godlevel-db` by default.
+- The SQL is idempotent (uses `IF NOT EXISTS` / safe index creation), so re-running is safe.
+- If you run into permission/extension issues (TimescaleDB/pg_cron), see the migration SQL comments; by default the migration avoids requiring TimescaleDB or pg_cron.
 ## Avaliação
 
 **Não** estamos avaliando se você seguiu instruções específicas.  

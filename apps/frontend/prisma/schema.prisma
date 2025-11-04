@@ -315,3 +315,4 @@ model sub_brands {
   stores        stores[]
   brands        brands?         @relation(fields: [brand_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
+

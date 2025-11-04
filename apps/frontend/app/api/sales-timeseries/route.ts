@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { BaseQuerySchema, serializePrismaData } from '@/lib/api-helpers'
+import { getOptimalTimeBucket, shouldUseMaterializedView, getCacheTTL } from '@/lib/query-optimizations'
 import { z } from 'zod'
 
 const TimeSeriesQuerySchema = BaseQuerySchema.extend({
-  timeBucket: z.enum(['hour', 'day', 'week', 'month']).default('day')
+  timeBucket: z.enum(['hour', 'day', 'week', 'month']).default('week')
 })
 
 function parseNumberArray(str: string | null | undefined): number[] | null {
@@ -33,23 +34,55 @@ export async function GET(request: Request) {
     const storeIdArray = parseNumberArray(storeIds)
     const channelIdArray = parseNumberArray(channelIds)
     
-    const result = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT
-        DATE_TRUNC('${timeBucket}', created_at) AS time_bucket,
-        SUM(total_amount) AS total_revenue,
-        COUNT(id) AS total_sales,
-        AVG(total_amount) AS avg_ticket
-      FROM sales
-      WHERE
-        sale_status_desc = 'COMPLETED'
-        AND created_at BETWEEN $1::timestamp AND $2::timestamp
-        AND ($3::int[] IS NULL OR store_id = ANY($3::int[]))
-        AND ($4::int[] IS NULL OR channel_id = ANY($4::int[]))
-      GROUP BY 1
-      ORDER BY 1;
-    `, startDate, endDate, storeIdArray, channelIdArray)
+    const optimalBucket = getOptimalTimeBucket({ startDate, endDate, timeBucket })
+    const useMaterializedView = shouldUseMaterializedView(startDate, endDate)
+    const cacheTTL = getCacheTTL(startDate, endDate)
+
+    // Adiciona Cache-Control header
+    const headers = new Headers()
+    headers.append('Cache-Control', `public, max-age=${cacheTTL}`)
+
+    // Seleciona a view materializada apropriada baseada no bucket
+    const viewName = useMaterializedView
+      ? optimalBucket === 'day' 
+        ? 'sales_daily_mv'
+        : optimalBucket === 'week'
+          ? 'sales_weekly_mv'
+          : 'sales_monthly_mv'
+      : 'sales'
     
-    return NextResponse.json(serializePrismaData(result))
+    const result = await prisma.$queryRawUnsafe<any[]>(
+      useMaterializedView
+        ? `
+          SELECT
+            date AS time_bucket,
+            total_revenue,
+            total_sales,
+            avg_ticket
+          FROM ${viewName}
+          WHERE date BETWEEN $1::timestamp AND $2::timestamp
+            AND ($3::int[] IS NULL OR store_id = ANY($3::int[]))
+            AND ($4::int[] IS NULL OR channel_id = ANY($4::int[]))
+          ORDER BY date;
+        `
+        : `
+          SELECT
+            DATE_TRUNC('day', created_at) AS time_bucket,
+            SUM(total_amount) AS total_revenue,
+            COUNT(id) AS total_sales,
+            AVG(total_amount) AS avg_ticket
+          FROM ${viewName}
+          WHERE sale_status_desc = 'COMPLETED'
+            AND created_at BETWEEN $1::timestamp AND $2::timestamp
+            AND ($3::int[] IS NULL OR store_id = ANY($3::int[]))
+            AND ($4::int[] IS NULL OR channel_id = ANY($4::int[]))
+          GROUP BY time_bucket
+          ORDER BY time_bucket;
+        `, startDate, endDate, storeIdArray, channelIdArray)
+    
+    const response = NextResponse.json(serializePrismaData(result))
+    response.headers.set('Cache-Control', `public, max-age=${cacheTTL}`)
+    return response
 
   } catch (error: any) {
     console.error(error)

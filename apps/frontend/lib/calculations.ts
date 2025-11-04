@@ -27,6 +27,10 @@ export function getPeriodDates(period: string): { startDate: Date; endDate: Date
       startDate.setDate(startDate.getDate() - 90)
       startDate.setHours(0, 0, 0, 0)
       break
+    case "semester":
+      startDate.setDate(startDate.getDate() - 180)
+      startDate.setHours(0, 0, 0, 0)
+      break
     default:
       startDate.setDate(startDate.getDate() - 30)
       startDate.setHours(0, 0, 0, 0)
